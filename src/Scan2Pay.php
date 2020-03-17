@@ -149,8 +149,8 @@ class Scan2Pay
         $request = $encrypter->encrypt(json_encode($requestData), false);
 
         // Encrypting the AES-KEY by RSA Public Key
-        $keyResource = openssl_pkey_get_public(file_get_contents($this->config['public_key_path']));
-        $publicKey = openssl_pkey_get_details($keyResource);
+        $pubKeyId = openssl_pkey_get_public(file_get_contents($this->config['public_key_path']));
+        $publicKey = openssl_pkey_get_details($pubKeyId);
         openssl_public_encrypt(base64_encode($aesKey), $apiKey, $publicKey['key']);
         $apiKey = base64_encode($apiKey);
 
@@ -190,6 +190,32 @@ class Scan2Pay
         }
 
         return $response;
+    }
+
+    /**
+     * Signature Verification
+     *
+     * @param array|string $data
+     * @throws \JsonException
+     * @throws \Chihhaoli\Scan2Pay\Exceptions\Scan2PayException
+     */
+    public function verifySignature($data): void
+    {
+        if (!is_array($data)) {
+            $data = json_decode($data, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new JsonException('Error parsing request data: ' . json_last_error_msg(), json_last_error());
+            }
+        }
+        $sign = base64_decode(str_replace('\u003d', '=', $data['Sign']));
+        unset($data['Sign']);
+        $data = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $pubKeyId = openssl_pkey_get_public(file_get_contents($this->config['public_key_path']));
+        $result = openssl_verify($data, $sign, $pubKeyId,OPENSSL_ALGO_SHA256);
+        openssl_free_key($pubKeyId);
+        if ($result !== 1) {
+            throw new Scan2PayException('', '7202');
+        }
     }
 
     /**
@@ -382,9 +408,3 @@ class Scan2Pay
     }
 
 }
-
-
-
-
-
-
