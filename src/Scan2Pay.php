@@ -263,10 +263,39 @@ class Scan2Pay
     /**
      * Customer-Presented QR Code
      * Consumer presents QR Code provided by each payment, the payee scans the QR Code to obtain the transaction authorization code to process the payment.
+     *
+     * @param string $orderNo
+     * @param string $body
+     * @param string $totalFee
+     * @param string $authCode
+     * @param $detail
+     * @return array
+     * @throws \Throwable
      */
-    public function micropay()
-    {
-        // TODO: Not implemented
+    public function micropay(
+        string $orderNo,
+        string $body,
+        string $totalFee,
+        string $authCode,
+        string $detail = null
+    ): array {
+        return $this->request(
+            PaymentMethod::INDEFINITE,
+            ServiceType::MICRO_PAY,
+            [
+                'StoreOrderNo' => $orderNo,
+                'DeviceInfo' => 'skb0001',
+                'Body' => $body,
+                'TotalFee' => $totalFee,
+                'Detail' => $detail,
+                'StoreInfo' => $this->config['store_info'] ?? null,
+                'Cashier' => $this->config['cashier'] ?? null,
+                'AuthCode' => $authCode,
+                'StoreName' => $this->config['store_name'] ?? null,
+                'StoreType' => $this->config['store_type'] ?? null,
+                'DeviceOS' => $this->config['device_os'] ?? null,
+            ]
+        );
     }
 
     /**
